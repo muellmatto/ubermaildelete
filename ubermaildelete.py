@@ -2,7 +2,7 @@
 
 import datetime
 import mailbox
-
+import os
 
 
 mailUserPath = os.path.join(os.getenv('HOME'),'users')

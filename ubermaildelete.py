@@ -4,7 +4,10 @@ import datetime
 import mailbox
 
 
-mattobox = mailbox.Maildir('/home/sehtms/users/bergholz/')
+
+mailUserPath = os.path.join(os.getenv('HOME'),'users')
+mailUserList = os.listdir(mailUserPath)
+mailUserList = [os.path.join(mailUserPath, x) for x in mailUserList]
 
 def deleteOldMails(maildir, maxAge=12):
     """
@@ -17,8 +20,10 @@ def deleteOldMails(maildir, maxAge=12):
             print( msg.get('DATE') )
             print( msgTime )
             print('------------------------------')
-            maildir.remove(key)
+            #maildir.remove(key)
 
 
-
-deleteOldMails(mattobox, 365)
+for maildirPath in mailUserList:
+    print(maildirPath)
+    maildir = mailbox.Maildir(maildirPath)
+    deleteOldMails(maildir, 500)

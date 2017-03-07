@@ -5,7 +5,6 @@ import mailbox
 import os
 import configparser
 import flask
-import flask
 
 # ---------------------------------------------------
 # read configfile

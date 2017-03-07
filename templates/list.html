@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>UberMailDelete</title>
+        <script>
+            function confirmDelete() {
+                var mailUsers = document.getElementsByName('mailUsers');
+                var atLeastOne = false;
+                for ( var i=0 ,l=mailUsers.length ; i<l ; i++) {
+                    if ( mailUsers[i].checked) {
+                        atLeastOne = true;
+                    }
+                }
+
+                
+                maxSizeFilter = document.getElementsByName('maxSizeFilter')[0].checked;
+                maxAgeFilter = document.getElementsByName('maxAgeFilter')[0].checked;
+
+                if (atLeastOne && ( maxSizeFilter || maxAgeFilter)) {
+                    return confirm('bist Du wirklich sicher?');
+                } else {
+                    if (!atLeastOne) {
+                        alert('mindestens einen Account wählen.');
+                    } else {
+                        alert('mindestens einen filter wählen.');
+                    }
+                    return false;
+                }
+            
+            }
+        </script>
+	</head>
+	<body>
+        <div style="max-width: 900px; margin: auto;">
+            <div style='clear: both; max-width: 400px; margin: auto; padding: 1rem;'>
+                <h1>
+                    <a href="{{ url_for('logout') }}">logout</a>
+                </h1>  
+            </div>
+            <form method="post" onsubmit="return confirmDelete()">
+                {%  for mailuser in mailusers %}
+                    <div style='clear: both; max-width: 400px; margin: auto; padding: 1rem;'>
+                                {{ mailuser['name'].split('/')[-1] }} - {{ mailuser['size'] }} 
+                        <input type="checkbox" name="mailUsers" value="{{ mailuser['name'] }}" >
+                    </div>
+                {% endfor %}
+                <p>
+                    <label>
+                        <input type="checkbox" name="maxAgeFilter">
+                        Älter als:
+                        <input type="number" name="maxAge" min=1 max=800 step=1 value=300>
+                        Tage
+                    </label>
+                </p>
+                <p>
+                    <label>
+                        <input type="checkbox" name="maxSizeFilter">
+                        Größer als:
+                        <input type="number" name="maxSize" min=0.5 step=0.5 value=10>
+                        megabyte
+                    </label>
+                </p>
+                <p>
+                    <input type="submit" name="uberMailDelete" value="delete">
+                </p>
+            </form>
+        </div>
+	</body>
+</html>

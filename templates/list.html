@@ -4,6 +4,33 @@
 		<meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>UberMailDelete</title>
+        <style>
+            .loader-small {
+                border: 0.2rem solid #f3f3f3; /* Light grey */
+                border-top: 0.2rem solid #3498db; /* Blue */
+                border-radius: 50%;
+                width: 1rem;
+                height: 1rem;
+                animation: spin 2s linear infinite;
+                float: right;
+            }
+
+            .loader {
+                border: 16px solid #f3f3f3; /* Light grey */
+                border-top: 16px solid #3498db; /* Blue */
+                border-radius: 50%;
+                width: 120px;
+                height: 120px;
+                animation: spin 2s linear infinite;
+            }
+
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+
+
+        </style>
         <script>
             function confirmDelete() {
                 var mailUsers = document.getElementsByName('mailUsers');
@@ -33,6 +60,15 @@
         </script>
 	</head>
 	<body>
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <ul style="background: red;">
+            {% for message in messages %}
+              <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
         <div style="max-width: 900px; margin: auto;">
             <div style='clear: both; max-width: 400px; margin: auto; padding: 1rem;'>
                 <h1>
@@ -40,12 +76,8 @@
                 </h1>  
             </div>
             <form method="post" onsubmit="return confirmDelete()">
-                {%  for mailuser in mailusers %}
-                    <div style='clear: both; max-width: 400px; margin: auto; padding: 1rem;'>
-                                {{ mailuser['name'].split('/')[-1] }} - {{ mailuser['size'] }} 
-                        <input type="checkbox" name="mailUsers" value="{{ mailuser['name'] }}" >
-                    </div>
-                {% endfor %}
+                <div id="userList">
+                </div>
                 <p>
                     <label>
                         <input type="checkbox" name="maxAgeFilter">
@@ -66,6 +98,95 @@
                     <input type="submit" name="uberMailDelete" value="delete">
                 </p>
             </form>
+            <p>
+                <button type="button" onclick="ajaxDelete()">Ajax POST delete</button>
+            </p>
         </div>
+        <script>
+            "use strict";
+
+            /* -------------------  */
+            /* show spinner */
+            document.getElementById('userList').innerHTML = 'LOADING...<div class="loader"></div>';
+            
+            
+            /* -------------------  */
+            /* get diskusage in background */
+            var xmlhttp = new XMLHttpRequest();
+            var url = "/ajax/diskusage";
+
+            function fillList(data) {
+                var out = "";
+                for(var i = 0; i < data.length; i++) {
+                    out += '<div id="' + data[i].name + '"'
+                            + 'style="clear: both; max-width: 400px; margin: auto; padding: 1rem;">'
+                            + data[i].name + ' ==== ' + data[i].size
+                            + '<input type="checkbox" name="mailUsers" value="' + data[i].name + '" >'
+                            + '</div>';
+                }
+                document.getElementById('userList').innerHTML = out;
+            }
+
+            xmlhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    var resp = JSON.parse(this.responseText);
+                    fillList(resp);
+                }
+            };
+
+            xmlhttp.open("GET", url, true);
+            xmlhttp.send();
+
+            /* -------------------  */
+            /*  Delete mails in background */
+            function ajaxDelete() {
+                /* collect users  */
+                var userList = document.getElementsByName('mailUsers');
+                var deleteUserList = [];
+                for (var i=0; i < userList.length; i++ ) {
+                    if (userList[i].checked) {
+                        deleteUserList.push(userList[i].value);
+                    }
+                }
+                /* read Filtersettings*/
+                var maxAgeFilter = document.getElementsByName('maxAgeFilter')[0].checked;
+                var maxSizeFilter = document.getElementsByName('maxSizeFilter')[0].checked;
+                var maxAge = document.getElementsByName('maxAge')[0].value.toString(); 
+                var maxSize = document.getElementsByName('maxSize')[0].value.toString(); 
+                var postParams = "";
+                /* build post parameter */
+                if (maxAgeFilter) { 
+                    postParams += 'maxAgeFilter=true&maxAge=' + maxAge + '&';
+                }
+                if (maxSizeFilter) {
+                    postParams += 'maxSizeFilter=true&maxSize=' + maxSize + '&';
+                }
+                /* strip lst '&' */
+                postParams = postParams.slice(0,-1);
+
+                // alert(deleteUserList + '\n' + postParams);
+
+                /* post request per user in list */
+
+                for (var i=0; i < deleteUserList.length; i++) {
+                
+                    var xmlhttp = new XMLHttpRequest();
+                    var url = "/ajax/delete/" + deleteUserList[i];
+                    xmlhttp.onreadystatechange = function() {
+                        if (this.readyState == 4 && this.status == 200) {
+                            var resp = JSON.parse(this.responseText);
+                            alert(JSON.stringify(resp));
+                            /* reload diskusage for user here and display freed space  */
+                        }
+                    };
+                    xmlhttp.open("POST", url, true);
+                    alert(postParams);
+                    xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                    xmlhttp.send(postParams);
+                    document.getElementById(deleteUserList[i]).innerHTML = ' praktikant <div class="loader-small"></div>';
+                }
+            }
+
+        </script>
 	</body>
 </html>

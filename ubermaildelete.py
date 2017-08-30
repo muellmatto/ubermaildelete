@@ -56,7 +56,6 @@ def deleteOldMails(maildir, maxAge=None, maxSize=None):
     """
     def inner(maildir=maildir, maxAge=maxAge, maxSize=maxSize):
         count = 0 
-        age_time = datetime.timedelta(days=maxAge) 
         now_time = datetime.datetime.now()
         for key, msg in maildir.iteritems():
             # calc size and time 
@@ -80,10 +79,12 @@ def deleteOldMails(maildir, maxAge=None, maxSize=None):
                 maildir.remove(key)
             # check which filters to use
             if maxAge and maxSize:
+                age_time = datetime.timedelta(days=maxAge) 
                 if _biggerThan() and _olderThan():
                     count += 1
                     __deleteMail()
             elif maxAge and not maxSize:
+                age_time = datetime.timedelta(days=maxAge) 
                 if _olderThan():
                     count += 1
                     __deleteMail()

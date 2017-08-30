@@ -92,6 +92,7 @@ def deleteOldMails(maildir, maxAge=None, maxSize=None, folder_name=None):
                 if _biggerThan():
                     count += 1
                     __deleteMail()
+            maildir.clean()
         print("deleted " + str(count) + " in " + str(folder_name))
     return inner
 

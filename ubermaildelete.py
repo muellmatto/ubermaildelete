@@ -48,7 +48,7 @@ def getMailUserDiskUsage(mailUser):
     return total_size
 
 
-def deleteOldMails(maildir, maxAge=None, maxSize=None):
+def deleteOldMails(maildir, maxAge=None, maxSize=None, folder_name=None):
     """
     delete mails from mailbox.maildir older than maxAge in days
     and/or bigger than size in kB
@@ -56,7 +56,6 @@ def deleteOldMails(maildir, maxAge=None, maxSize=None):
     """
     def inner(maildir=maildir, maxAge=maxAge, maxSize=maxSize):
         count = 0 
-        age_time = datetime.timedelta(days=maxAge) 
         now_time = datetime.datetime.now()
         for key, msg in maildir.iteritems():
             # calc size and time 
@@ -80,10 +79,12 @@ def deleteOldMails(maildir, maxAge=None, maxSize=None):
                 maildir.remove(key)
             # check which filters to use
             if maxAge and maxSize:
+                age_time = datetime.timedelta(days=maxAge) 
                 if _biggerThan() and _olderThan():
                     count += 1
                     __deleteMail()
             elif maxAge and not maxSize:
+                age_time = datetime.timedelta(days=maxAge) 
                 if _olderThan():
                     count += 1
                     __deleteMail()
@@ -91,7 +92,7 @@ def deleteOldMails(maildir, maxAge=None, maxSize=None):
                 if _biggerThan():
                     count += 1
                     __deleteMail()
-        print("deleted " + str(count))
+        print("deleted " + str(count) + " in " + str(folder_name))
     return inner
 
 
@@ -139,8 +140,12 @@ def main():
                     maxSize = int( float(flask.request.form['maxSize']) *1024 )
                     print('max size', maxSize)
                 maildir = mailbox.Maildir(mailUser)
-                del_threads.append(Thread(target=deleteOldMails(maildir,maxAge=maxAge, maxSize=maxSize), name=mailUser, daemon=True))
+                del_threads.append(Thread(target=deleteOldMails(maildir,maxAge=maxAge, maxSize=maxSize, folder_name=mailUser), name=mailUser, daemon=True))
                 del_threads[-1].start()
+                for mail_folder in maildir.list_folders():
+                    maildir_folder = maildir.get_folder(mail_folder)
+                    del_threads.append(Thread(target=deleteOldMails(maildir_folder,maxAge=maxAge, maxSize=maxSize, folder_name=mail_folder), name=mailUser, daemon=True))
+                    del_threads[-1].start()
             return "Das kann jetzt etwas dauern, lösche mail in den postfächern von : " + str(flask.request.form['mailUsers']) + "   du kannst die <a href='/'>startseite</a> immer wieder aktualisieren um zu sehen, was passiert."
         mailDirStats = [ {'name': x, 'size': str(getMailUserDiskUsage(x)/1000000) + ' MB'} for x in getMailUserList() ]
         return flask.render_template("list.html", mailusers=mailDirStats)
